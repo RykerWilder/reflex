@@ -1,12 +1,3 @@
-"""
-YOLOv8 Tracker Module
-Rilevamento e tracciamento automatico tramite Ultralytics YOLOv8 + BoT-SORT.
-Il modello yolov8n.pt (~6 MB) viene scaricato automaticamente al primo avvio.
-
-Tasto C  -> cambia classe COCO da tracciare
-Tasto Q  -> esci
-"""
-
 import cv2
 
 try:
@@ -78,21 +69,20 @@ def _draw_hud(frame, class_name, fps, n_targets, class_idx):
     cv2.addWeighted(overlay, 0.55, frame, 0.45, 0, frame)
     grey = (200, 200, 200)
     _overlay_text(frame, "MODE    : YOLOv8 Auto Tracker", (8, 22), grey, 0.5, 1)
-    _overlay_text(frame, f"CLASSE  : {class_name.upper()} (idx {class_idx if class_idx is not None else '*'})",
+    _overlay_text(frame, f"CLASS  : {class_name.upper()} (idx {class_idx if class_idx is not None else '*'})",
                   (8, 44), (0, 220, 255))
     _overlay_text(frame, f"TARGETS : {n_targets}", (8, 66), (0, 255, 80) if n_targets else grey)
     _overlay_text(frame, f"FPS     : {fps:.1f}",   (8, 88), grey, 0.5, 1)
-    guide = "[C] Cambia classe  |  [Q] Esci"
+    guide = "[C] Channge Target  |  [Q] Exit"
     _overlay_text(frame, guide, (8, h_frame - 10), grey, 0.42, 1)
 
 
 def _pick_class_menu(current_idx):
-    print("\n─── Scegli la classe da tracciare ───────────────────────")
     for i, name in enumerate(CLASS_NAMES):
         marker = " ◄" if i == current_idx else ""
         print(f"  [{i:2d}] {name}{marker}")
     print("─────────────────────────────────────────────────────────")
-    raw = input("  Numero classe (Invio = annulla): ").strip()
+    raw = input("  Class Number (Enter = cancel): ").strip()
     if raw.isdigit() and 0 <= int(raw) < len(CLASS_NAMES):
         idx  = int(raw)
         name = CLASS_NAMES[idx]
@@ -101,19 +91,18 @@ def _pick_class_menu(current_idx):
 
 
 def run_yolo_tracker(camera_index=0, model_path="yolov8n.pt"):
-    """Avvia il tracker YOLOv8 sulla webcam specificata."""
     if not _YOLO_AVAILABLE:
-        print("[ERRORE] La libreria 'ultralytics' non è installata.")
-        print("         Esegui:  pip install ultralytics")
+        print("[ERROR] ultralytics not installed")
+        print("Run: pip install ultralytics")
         return
 
-    print(f"\n[YOLOv8] Caricamento modello '{model_path}'...")
+    print(f"\n[YOLOv8] Loading model '{model_path}'...")
     model = YOLO(model_path)
-    print("[YOLOv8] Modello caricato.")
+    print("[YOLOv8] Model ready")
 
     cap = cv2.VideoCapture(camera_index)
     if not cap.isOpened():
-        print(f"[ERRORE] Impossibile aprire la webcam (indice {camera_index}).")
+        print(f"[ERROR] Impossibile find cam (index {camera_index}).")
         return
 
     cap.set(cv2.CAP_PROP_FRAME_WIDTH,  1280)
@@ -127,13 +116,12 @@ def run_yolo_tracker(camera_index=0, model_path="yolov8n.pt"):
     prev_tick = cv2.getTickCount()
     fps       = 0.0
 
-    print(f"\n[YOLOv8] Tracciamento avviato – classe: {class_name.upper()}")
-    print("          Premi C nella finestra per cambiare classe | Q per uscire.\n")
+    print(f"\n[YOLOv8] Tracking started – class: {class_name.upper()}")
 
     while True:
         ret, frame = cap.read()
         if not ret:
-            print("[AVVISO] Frame non ricevuto dalla webcam.")
+            print("[WARNING] Frame not received by webcam.")
             break
 
         curr_tick = cv2.getTickCount()
@@ -170,10 +158,10 @@ def run_yolo_tracker(camera_index=0, model_path="yolov8n.pt"):
             cv2.destroyAllWindows()
             class_name, class_filter = _pick_class_menu(class_name_idx)
             class_name_idx = CLASS_NAMES.index(class_name)
-            print(f"[YOLOv8] Classe cambiata → {class_name.upper()}")
+            print(f"[YOLOv8] Class changed → {class_name.upper()}")
         elif key in (ord("q"), 27):
             break
 
     cap.release()
     cv2.destroyAllWindows()
-    print("[YOLOv8 Tracker] Sessione terminata.")
+    print("[YOLOv8] Session stopped.")
