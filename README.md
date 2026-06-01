@@ -1,4 +1,4 @@
-# Keeper
+# Red Dot Sight
 
 This project uses a webcam to detect a person and display a red crosshair on the subject's forehead.
 The crosshair follows the face in real time as the person moves.
