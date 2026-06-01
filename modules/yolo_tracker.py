@@ -154,7 +154,7 @@ def _pick_class_menu(active_classes):
                     current.add(coco_idx)
 
 
-def run_yolo_tracker(camera_index=0, model_path="yolov8n.pt"):
+def run_yolo_tracker(camera_index=0, model_path="yolov8s.pt"):
     if not _YOLO_AVAILABLE:
         print("[ERROR] ultralytics not installed")
         print("Run: pip install ultralytics")
