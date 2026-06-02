@@ -11,7 +11,7 @@ BOLD  = "\033[1m"
 
 
 def _ask_camera():
-    raw = input(f"  {YELLOW}Indice webcam{RESET} [default=0]: ").strip()
+    raw = input(f"  {YELLOW}Webcam index{RESET} [default=0]: ").strip()
     return int(raw) if raw.isdigit() else 0
 
 
