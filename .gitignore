@@ -5,7 +5,7 @@ ENV/
 .env/
 
 *.pt
-
+*.png
 __pycache__/
 *.py[cod]
 *$py.class
