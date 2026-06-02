@@ -1,6 +1,6 @@
 # Red Dot Sight
 
-<img src="https://i.pinimg.com/1200x/fc/73/3a/fc733ad1ecaa8cf200e34c5110aaceb7.jpg" alt="Red Dot Sight" height="300" width="500">
+<img src="https://i.pinimg.com/1200x/fc/73/3a/fc733ad1ecaa8cf200e34c5110aaceb7.jpg" alt="Red Dot Sight">
 
 This project uses a webcam to detect a person and display a red crosshair on the subject's forehead.
 The crosshair follows the face in real time as the person moves.
