@@ -13,7 +13,7 @@ except ImportError:
 
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 COLOR_TEXT_BG = (0, 0, 0)
-COLOR_FOREHEAD_DOT = (0, 0, 255)  # red in BGR
+COLOR_FOREHEAD_DOT = (0, 0, 255)
 
 
 # COCO pose face keypoints
@@ -88,7 +88,7 @@ def _draw_hud(frame, fps, n_targets):
     _overlay_text(frame, "TARGET  : PERSON / FOREHEAD", (8, 44), (0, 220, 255))
     _overlay_text(frame, f"TARGETS : {n_targets}", (8, 66), (0, 255, 80) if n_targets else grey)
     _overlay_text(frame, f"FPS     : {fps:.1f}", (8, 88), grey, 0.5, 1)
-    _overlay_text(frame, "[S] Screenshot   [Q] Exit", (8, h_frame - 10), grey, 0.42, 1)
+    _overlay_text(frame, "[S] Screenshot   [Q] Quit", (8, h_frame - 10), grey, 0.42, 1)
 
 
 
@@ -334,26 +334,21 @@ def run_yolo_tracker(camera_index=0, model_path="yolov8n-pose.pt"):
                 _draw_forehead_reticle(frame, fx, fy)
 
 
-        # cleanup stale tracks
+        
         stale_ids = [tid for tid in forehead_memory.keys() if tid not in active_ids]
         for tid in stale_ids:
             del forehead_memory[tid]
 
 
-        # Disegna HUD PRIMA di mostrare il frame
         _draw_hud(frame, fps, n_targets)
 
-        # Mostra il frame con HUD
         cv2.imshow("Smart Tracker – YOLOv8 Pose Forehead", frame)
 
-        # Leggi tasto UNA SOLA VOLTA
         key = cv2.waitKey(1) & 0xFF
 
-        # Screenshot su frame con HUD
         if key == ord("s"):
             _save_screenshot(frame, prefix="smart_tracker")
 
-        # Esci
         if key in (ord("q"), 27):
             break
 

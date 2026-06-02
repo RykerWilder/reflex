@@ -10,36 +10,12 @@ RESET = "\033[0m"
 BOLD  = "\033[1m"
 
 
-def _banner():
-    print(f"""
-{CYAN}{BOLD}
-                                   *                                      
-                                   *                                       
-                             **        **                                  
-                          *                 *                              
-                        *                     *                            
-                       *                       *                           
-                                   *                                       
-                  ****           *****            ****                      
-                                   *                                        
-                       *                       *                           
-                         *                   *                             
-                           **             **                               
-                                   *                                        
-                                   *                                       
-                                                                           
-                                                                           
-                                                               
-{RESET}""")
-
-
 def _ask_camera():
     raw = input(f"  {YELLOW}Indice webcam{RESET} [default=0]: ").strip()
     return int(raw) if raw.isdigit() else 0
 
 
 def main():
-    _banner()
     cam = _ask_camera()
     run_yolo_tracker(camera_index=cam)
 
