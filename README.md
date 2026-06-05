@@ -1,25 +1,65 @@
-# Red Dot Sight
+# RedDotSight
 
 <img src="https://i.pinimg.com/1200x/fc/73/3a/fc733ad1ecaa8cf200e34c5110aaceb7.jpg" alt="Red Dot Sight">
 
-This project uses a webcam to detect a person and display a red crosshair on the subject's forehead.
-The crosshair follows the face in real time as the person moves.
+RedDotSight is a Python computer vision tool that uses a webcam to detect people and place a red crosshair on the subject’s forehead in real time.
 
-## What it does
-- Tracks the subject over time.
-- Places a red crosshair on the forehead.
-- Displays boxes, information, and FPS on the screen.
+The application tracks the target as the person moves and displays visual overlays such as bounding boxes, tracking information, and FPS.
 
-## How to run it
+## Features
 
-1. Make sure the webcam is connected and accessible.
-
-## Exit
-
-- Press `Q` or `ESC` to close the program.
+- Real-time webcam-based person detection.
+- Forehead targeting with a red crosshair.
+- Automatic and manual startup modes.
+- On-screen overlays for boxes, labels, and FPS.
+- Screenshot capture during execution.
 
 ## Requirements
 
-- Python 3.8 or higher.
-- Working webcam.
-- Internet connection only the first time, if the model needs to be downloaded.
+- Python 3.10 or higher.
+- A working webcam.
+- macOS, Linux, or Windows with OpenCV support.
+- Internet connection only the first time if extra dependencies need to be resolved.
+
+## Usage
+
+Show CLI help:
+
+```bash
+redot --help
+```
+
+Start in automatic mode:
+
+```bash
+redot -a
+```
+
+Start in manual mode:
+
+```bash
+redot -m
+```
+
+When the program starts, you will be asked for the webcam index:
+
+```text
+Webcam index [default=0]:
+```
+
+Press Enter to use the default webcam.
+
+## Controls
+
+- `S` saves a screenshot.
+- `Q` closes the application.
+- `ESC` closes the application.
+
+## Notes
+
+- The YOLO models are loaded from `RedDotSight/models/`.
+- Screenshots are saved during runtime in the screenshots directory used by the application.
+
+## License
+
+This project is distributed under the terms of the license included in the `LICENSE` file.
