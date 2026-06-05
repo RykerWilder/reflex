@@ -1,7 +1,8 @@
 import cv2
 import math
 from datetime import datetime
-import os
+from pathlib import Path
+from importlib.resources import files
 
 try:
     from ultralytics import YOLO
@@ -14,7 +15,6 @@ FONT = cv2.FONT_HERSHEY_SIMPLEX
 COLOR_TEXT_BG = (0, 0, 0)
 COLOR_FOREHEAD_DOT = (0, 0, 255)
 
-# COCO pose face keypoints
 KP_NOSE = 0
 KP_LEFT_EYE = 1
 KP_RIGHT_EYE = 2
@@ -24,9 +24,23 @@ KP_RIGHT_EAR = 4
 PERSON_CLASS_ID = 0
 
 _ID_COLORS = [
-    (0, 255, 80),   (255, 180, 0),  (0, 180, 255),  (255, 0, 180),
-    (80, 255, 255), (255, 80, 80),  (80, 80, 255),  (180, 255, 0),
+    (0, 255, 80), (255, 180, 0), (0, 180, 255), (255, 0, 180),
+    (80, 255, 255), (255, 80, 80), (80, 80, 255), (180, 255, 0),
 ]
+
+
+def _package_path(*parts):
+    return Path(files("RedDotSight").joinpath(*parts))
+
+
+def _default_model_paths():
+    detect_model = _package_path("models", "yolov8n.pt")
+    pose_model = _package_path("models", "yolov8n-pose.pt")
+    return str(detect_model), str(pose_model)
+
+
+def _default_screenshot_dir():
+    return str(_package_path("screenshots"))
 
 
 def _get_color(track_id):
@@ -76,14 +90,14 @@ def _draw_object_box(frame, x1, y1, x2, y2, label, conf, color=(180, 180, 180)):
     cv2.putText(frame, tag, (x1 + 2, ty), FONT, 0.52, color, 1, cv2.LINE_AA)
 
 
-def _draw_hud(frame, fps, n_targets, n_objects):
+def _draw_hud(frame, fps, n_targets, n_objects, mode):
     h_frame, _ = frame.shape[:2]
     overlay = frame.copy()
-    cv2.rectangle(overlay, (0, 0), (390, 122), (20, 20, 20), -1)
+    cv2.rectangle(overlay, (0, 0), (420, 122), (20, 20, 20), -1)
     cv2.addWeighted(overlay, 0.55, frame, 0.45, 0, frame)
 
     grey = (200, 200, 200)
-    _overlay_text(frame, "MODE    : YOLOv8 Detect + ROI Pose", (8, 22), grey, 0.5, 1)
+    _overlay_text(frame, f"MODE    : {mode.upper()}", (8, 22), grey, 0.5, 1)
     _overlay_text(frame, f"OBJECTS : {n_objects}", (8, 44), (255, 180, 0))
     _overlay_text(frame, f"PERSONS : {n_targets}", (8, 66), (0, 255, 80) if n_targets else grey)
     _overlay_text(frame, f"FPS     : {fps:.1f}", (8, 88), grey, 0.5, 1)
@@ -135,28 +149,20 @@ def _estimate_forehead_from_pose(kpts_xy, kpts_conf, box):
         ex = (left_eye[0] + right_eye[0]) / 2.0
         ey = (left_eye[1] + right_eye[1]) / 2.0
         eye_dist = math.hypot(right_eye[0] - left_eye[0], right_eye[1] - left_eye[1])
-        forehead_x = ex
-        forehead_y = ey - max(10.0, eye_dist * 0.55)
-        return int(forehead_x), int(forehead_y)
+        return int(ex), int(ey - max(10.0, eye_dist * 0.55))
 
     if nose_ok and left_eye_ok:
         dx = left_eye[0] - nose[0]
         dy = left_eye[1] - nose[1]
-        forehead_x = nose[0] + dx * 0.5
-        forehead_y = nose[1] - max(10.0, abs(dy) * 2.2, h * 0.10)
-        return int(forehead_x), int(forehead_y)
+        return int(nose[0] + dx * 0.5), int(nose[1] - max(10.0, abs(dy) * 2.2, h * 0.10))
 
     if nose_ok and right_eye_ok:
         dx = right_eye[0] - nose[0]
         dy = right_eye[1] - nose[1]
-        forehead_x = nose[0] + dx * 0.5
-        forehead_y = nose[1] - max(10.0, abs(dy) * 2.2, h * 0.10)
-        return int(forehead_x), int(forehead_y)
+        return int(nose[0] + dx * 0.5), int(nose[1] - max(10.0, abs(dy) * 2.2, h * 0.10))
 
     if left_ear_ok and right_ear_ok:
-        hx = (left_ear[0] + right_ear[0]) / 2.0
-        hy = (left_ear[1] + right_ear[1]) / 2.0 - h * 0.10
-        return int(hx), int(hy)
+        return int((left_ear[0] + right_ear[0]) / 2.0), int((left_ear[1] + right_ear[1]) / 2.0 - h * 0.10)
 
     return int((x1 + x2) / 2), int(y1 + h * 0.16)
 
@@ -171,13 +177,14 @@ def _draw_forehead_reticle(frame, fx, fy):
     cv2.line(frame, (fx, fy + 8), (fx, fy + 16), red, 1)
 
 
-def _save_screenshot(frame, prefix="screenshot", save_dir="screenshots"):
-    os.makedirs(save_dir, exist_ok=True)
+def _save_screenshot(frame, prefix="screenshot", save_dir=None):
+    save_dir = save_dir or _default_screenshot_dir()
+    Path(save_dir).mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = f"{prefix}_{timestamp}.png"
-    full_path = os.path.join(save_dir, filename)
+    full_path = Path(save_dir) / filename
 
-    ok = cv2.imwrite(full_path, frame)
+    ok = cv2.imwrite(str(full_path), frame)
     if ok:
         print(f"[SCREENSHOT] Saved: {full_path}")
     else:
@@ -217,9 +224,7 @@ def _run_pose_on_person_crop(pose_model, frame, person_box, pose_conf=0.35):
     if len(boxes_xyxy) == 0 or len(kpts_xy) == 0:
         return None, None, None
 
-    best_idx = 0
-    if confs is not None and len(confs) > 0:
-        best_idx = int(confs.argmax())
+    best_idx = int(confs.argmax()) if confs is not None and len(confs) > 0 else 0
 
     pose_box = boxes_xyxy[best_idx]
     pose_kpts_xy = kpts_xy[best_idx]
@@ -239,10 +244,27 @@ def _run_pose_on_person_crop(pose_model, frame, person_box, pose_conf=0.35):
     return pose_box_global, pose_kpts_xy_global, pose_kpts_conf
 
 
-def run_yolo_tracker(camera_index=0, detect_model_path="yolov8n.pt", pose_model_path="yolov8n-pose.pt"):
+def run_yolo_tracker(
+    camera_index=0,
+    mode="default",
+    detect_model_path=None,
+    pose_model_path=None,
+    screenshot_dir=None,
+):
     if not _YOLO_AVAILABLE:
         print("[ERROR] ultralytics not installed")
         print("Run: pip install ultralytics")
+        return
+
+    detect_model_path = detect_model_path or _default_model_paths()[0]
+    pose_model_path = pose_model_path or _default_model_paths()[1]
+
+    if not Path(detect_model_path).exists():
+        print(f"[ERROR] Detection model not found: {detect_model_path}")
+        return
+
+    if not Path(pose_model_path).exists():
+        print(f"[ERROR] Pose model not found: {pose_model_path}")
         return
 
     print(f"\n[YOLOv8-Detect] Loading model '{detect_model_path}'...")
@@ -253,7 +275,7 @@ def run_yolo_tracker(camera_index=0, detect_model_path="yolov8n.pt", pose_model_
 
     cap = cv2.VideoCapture(camera_index)
     if not cap.isOpened():
-        print(f"[ERROR] Impossible to find cam (index {camera_index}).")
+        print(f"[ERROR] Impossible to open cam (index {camera_index}).")
         return
 
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
@@ -266,101 +288,106 @@ def run_yolo_tracker(camera_index=0, detect_model_path="yolov8n.pt", pose_model_
     forehead_memory = {}
     next_person_id = 0
 
-    print("\n[YOLO] Tracking started")
+    print(f"\n[YOLO] Tracking started in mode: {mode}")
     print("[YOLO] Press 'S' to save a screenshot.")
+    print("[YOLO] Press 'Q' or ESC to quit.")
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            print("[WARNING] Frame not received by webcam.")
-            break
+    try:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                print("[WARNING] Frame not received from webcam.")
+                break
 
-        curr_tick = cv2.getTickCount()
-        fps = tick_freq / (curr_tick - prev_tick + 1e-9)
-        prev_tick = curr_tick
+            curr_tick = cv2.getTickCount()
+            fps = tick_freq / (curr_tick - prev_tick + 1e-9)
+            prev_tick = curr_tick
 
-        det_results = det_model.track(
-            frame,
-            persist=True,
-            verbose=False,
-            conf=0.35,
-            iou=0.45,
-        )
+            conf = 0.35 if mode == "automatic" else 0.45
+            iou = 0.45 if mode == "automatic" else 0.35
 
-        n_objects = 0
-        n_targets = 0
-        active_ids = set()
+            det_results = det_model.track(
+                frame,
+                persist=True,
+                verbose=False,
+                conf=conf,
+                iou=iou,
+            )
 
-        det_boxes = det_results[0].boxes
-        if det_boxes is not None and det_boxes.xyxy is not None:
-            d_xyxys = det_boxes.xyxy.cpu().numpy().astype(int)
-            d_confs = det_boxes.conf.cpu().numpy()
-            d_clss = det_boxes.cls.cpu().numpy().astype(int)
-            d_ids = det_boxes.id.cpu().numpy().astype(int) if det_boxes.id is not None else None
+            n_objects = 0
+            n_targets = 0
+            active_ids = set()
 
-            n_objects = len(d_xyxys)
+            det_boxes = det_results[0].boxes
+            if det_boxes is not None and det_boxes.xyxy is not None:
+                d_xyxys = det_boxes.xyxy.cpu().numpy().astype(int)
+                d_confs = det_boxes.conf.cpu().numpy()
+                d_clss = det_boxes.cls.cpu().numpy().astype(int)
+                d_ids = det_boxes.id.cpu().numpy().astype(int) if det_boxes.id is not None else None
 
-            for idx, (box, conf, cls_id) in enumerate(zip(d_xyxys, d_confs, d_clss)):
-                x1, y1, x2, y2 = map(int, box)
+                n_objects = len(d_xyxys)
 
-                try:
-                    lbl = det_results[0].names[cls_id]
-                except (KeyError, IndexError):
-                    lbl = str(cls_id)
+                for idx, (box, conf_score, cls_id) in enumerate(zip(d_xyxys, d_confs, d_clss)):
+                    x1, y1, x2, y2 = map(int, box)
 
-                if cls_id == PERSON_CLASS_ID:
-                    tid = int(d_ids[idx]) if d_ids is not None else next_person_id + idx
-                    active_ids.add(tid)
-                    color = _get_color(tid)
+                    try:
+                        lbl = det_results[0].names[cls_id]
+                    except (KeyError, IndexError):
+                        lbl = str(cls_id)
 
-                    _draw_crosshair(frame, x1, y1, x2, y2, color, tid, lbl, conf)
+                    if cls_id == PERSON_CLASS_ID:
+                        tid = int(d_ids[idx]) if d_ids is not None else next_person_id + idx
+                        active_ids.add(tid)
+                        color = _get_color(tid)
 
-                    pose_box, person_kpts_xy, person_kpts_conf = _run_pose_on_person_crop(
-                        pose_model,
-                        frame,
-                        (x1, y1, x2, y2),
-                        pose_conf=0.35
-                    )
+                        _draw_crosshair(frame, x1, y1, x2, y2, color, tid, lbl, conf_score)
 
-                    if person_kpts_xy is not None:
-                        if pose_box is not None:
-                            px1, py1, px2, py2 = pose_box
-                        else:
-                            px1, py1, px2, py2 = x1, y1, x2, y2
-
-                        fx, fy = _estimate_forehead_from_pose(
-                            person_kpts_xy,
-                            person_kpts_conf,
-                            (px1, py1, px2, py2)
+                        pose_box, person_kpts_xy, person_kpts_conf = _run_pose_on_person_crop(
+                            pose_model,
+                            frame,
+                            (x1, y1, x2, y2),
+                            pose_conf=0.35
                         )
 
-                        fx = max(0, min(frame.shape[1] - 1, fx))
-                        fy = max(0, min(frame.shape[0] - 1, fy))
+                        if person_kpts_xy is not None:
+                            px1, py1, px2, py2 = pose_box if pose_box is not None else (x1, y1, x2, y2)
 
-                        fx, fy = _smooth_point(forehead_memory, tid, fx, fy, alpha=0.35)
-                        _draw_forehead_reticle(frame, fx, fy)
+                            fx, fy = _estimate_forehead_from_pose(
+                                person_kpts_xy,
+                                person_kpts_conf,
+                                (px1, py1, px2, py2)
+                            )
 
-                    n_targets += 1
-                else:
-                    _draw_object_box(frame, x1, y1, x2, y2, lbl, conf)
+                            fx = max(0, min(frame.shape[1] - 1, fx))
+                            fy = max(0, min(frame.shape[0] - 1, fy))
 
-            if d_ids is None:
-                next_person_id += len(d_xyxys)
+                            smooth_alpha = 0.20 if mode == "manual" else 0.35
+                            fx, fy = _smooth_point(forehead_memory, tid, fx, fy, alpha=smooth_alpha)
+                            _draw_forehead_reticle(frame, fx, fy)
 
-        stale_ids = [tid for tid in list(forehead_memory.keys()) if tid not in active_ids]
-        for tid in stale_ids:
-            del forehead_memory[tid]
+                        n_targets += 1
+                    else:
+                        if mode == "automatic":
+                            _draw_object_box(frame, x1, y1, x2, y2, lbl, conf_score)
 
-        _draw_hud(frame, fps, n_targets, n_objects)
-        cv2.imshow("Smart Tracker – YOLOv8 Detect + ROI Pose", frame)
+                if d_ids is None:
+                    next_person_id += len(d_xyxys)
 
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord("s"):
-            _save_screenshot(frame, prefix="smart_tracker")
+            stale_ids = [tid for tid in list(forehead_memory.keys()) if tid not in active_ids]
+            for tid in stale_ids:
+                del forehead_memory[tid]
 
-        if key in (ord("q"), 27):
-            break
+            _draw_hud(frame, fps, n_targets, n_objects, mode)
+            cv2.imshow("RedDotSight", frame)
 
-    cap.release()
-    cv2.destroyAllWindows()
-    print("[YOLO] Session stopped.")
+            key = cv2.waitKey(1) & 0xFF
+            if key == ord("s"):
+                _save_screenshot(frame, prefix=f"redotsight_{mode}", save_dir=screenshot_dir)
+
+            if key in (ord("q"), 27):
+                break
+
+    finally:
+        cap.release()
+        cv2.destroyAllWindows()
+        print("[YOLO] Session stopped.")

@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "red-dot-sight"
+version = "0.1.0"
+description = "CLI tool for YOLO tracking and Red Dot Sight utilities"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "RykerWilder" }
+]
+dependencies = [
+  "click>=8.1",
+  "opencv-python>=4.8.0",
+  "ultralytics>=8.0.0",
+  "numpy>=1.24.0",
+  "lap>=0.5.12"
+]
+
+[project.scripts]
+redot = "RedDotSight.cli:cli"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["RedDotSight*"]
+
+[tool.setuptools.package-data]
+RedDotSight = ["models/*.pt"]
