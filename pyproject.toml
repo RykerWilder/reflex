@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "red-dot-sight"
+name = "reflex"
 version = "0.1.0"
-description = "CLI tool for YOLO tracking and Red Dot Sight utilities"
+description = "CLI tool for tracking people"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
@@ -21,13 +21,13 @@ dependencies = [
 ]
 
 [project.scripts]
-redot = "RedDotSight.cli:cli"
+reflex = "Reflex.cli:cli"
 
 [tool.setuptools]
 include-package-data = true
 
 [tool.setuptools.packages.find]
-include = ["RedDotSight*"]
+include = ["Reflex*"]
 
 [tool.setuptools.package-data]
-RedDotSight = ["models/*.pt"]
+Reflex = ["models/*.pt"]

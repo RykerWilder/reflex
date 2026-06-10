@@ -1,8 +1,8 @@
-# RedDotSight
+# Reflex
 
 <img src="https://i.pinimg.com/1200x/fc/73/3a/fc733ad1ecaa8cf200e34c5110aaceb7.jpg" alt="Red Dot Sight">
 
-RedDotSight is a Python computer vision tool that uses a webcam to detect people and place a red crosshair on the subject’s forehead in real time.
+Reflex is a Python computer vision tool that uses a webcam to detect people and place a red crosshair on the subject’s forehead in real time.
 
 The application tracks the target as the person moves and displays visual overlays such as bounding boxes, tracking information, and FPS.
 

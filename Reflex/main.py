@@ -1,4 +1,4 @@
-from RedDotSight.modules.yolo_tracker import run_yolo_tracker
+from Reflex.modules.yolo_tracker import run_yolo_tracker
 
 YELLOW = "\033[93m"
 RESET = "\033[0m"

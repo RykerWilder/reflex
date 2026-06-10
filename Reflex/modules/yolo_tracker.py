@@ -30,7 +30,7 @@ _ID_COLORS = [
 
 
 def _package_path(*parts):
-    return Path(files("RedDotSight").joinpath(*parts))
+    return Path(files("Reflex").joinpath(*parts))
 
 
 def _default_model_paths():
@@ -378,11 +378,11 @@ def run_yolo_tracker(
                 del forehead_memory[tid]
 
             _draw_hud(frame, fps, n_targets, n_objects, mode)
-            cv2.imshow("RedDotSight", frame)
+            cv2.imshow("Reflex", frame)
 
             key = cv2.waitKey(1) & 0xFF
             if key == ord("s"):
-                _save_screenshot(frame, prefix=f"redotsight_{mode}", save_dir=screenshot_dir)
+                _save_screenshot(frame, prefix=f"reflex_{mode}", save_dir=screenshot_dir)
 
             if key in (ord("q"), 27):
                 break
