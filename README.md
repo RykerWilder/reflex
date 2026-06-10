@@ -26,19 +26,19 @@ The application tracks the target as the person moves and displays visual overla
 Show CLI help:
 
 ```bash
-redot --help
+reflex --help
 ```
 
 Start in automatic mode:
 
 ```bash
-redot -a
+reflex -a
 ```
 
 Start in manual mode:
 
 ```bash
-redot -m
+reflex -m
 ```
 
 When the program starts, you will be asked for the webcam index:
@@ -57,7 +57,7 @@ Press Enter to use the default webcam.
 
 ## Notes
 
-- The YOLO models are loaded from `RedDotSight/models/`.
+- The YOLO models are loaded from `Reflex/models/`.
 - Screenshots are saved during runtime in the screenshots directory used by the application.
 
 ## License
