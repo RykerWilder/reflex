@@ -32,7 +32,7 @@ _ID_COLORS = [
 
 
 def _models_dir():
-    return Path.cwd() / "models"
+    return Path.cwd() / "Reflex/models"
 
 
 def _default_model_paths():
