@@ -1,5 +1,7 @@
 import cv2
 import math
+import time
+import subprocess
 from datetime import datetime
 from pathlib import Path
 from importlib.resources import files
@@ -244,6 +246,28 @@ def _run_pose_on_person_crop(pose_model, frame, person_box, pose_conf=0.35):
     return pose_box_global, pose_kpts_xy_global, pose_kpts_conf
 
 
+def _launch_command_for_human(track_id, conf_score, cooldowns, threshold=0.80, cooldown_sec=3.0):
+    if conf_score < threshold:
+        return
+
+    now = time.time()
+    last_time = cooldowns.get(track_id, 0.0)
+
+    if now - last_time < cooldown_sec:
+        return
+
+    cooldowns[track_id] = now
+
+    try:
+        subprocess.run(
+            ["echo", f"Human detected: ID={track_id}, conf={conf_score:.2f}"],
+            check=False
+        )
+        print("Command launched")
+    except Exception as e:
+        print(f"[COMMAND ERROR] {e}")
+
+
 def run_yolo_tracker(
     camera_index=0,
     mode="default",
@@ -287,6 +311,7 @@ def run_yolo_tracker(
 
     forehead_memory = {}
     next_person_id = 0
+    command_cooldowns = {}
 
     print(f"\n[YOLO] Tracking started in mode: {mode}")
     print("[YOLO] Press 'S' to save a screenshot.")
@@ -340,6 +365,14 @@ def run_yolo_tracker(
                         active_ids.add(tid)
                         color = _get_color(tid)
 
+                        _launch_command_for_human(
+                            tid,
+                            float(conf_score),
+                            command_cooldowns,
+                            threshold=0.80,
+                            cooldown_sec=3.0
+                        )
+
                         _draw_crosshair(frame, x1, y1, x2, y2, color, tid, lbl, conf_score)
 
                         pose_box, person_kpts_xy, person_kpts_conf = _run_pose_on_person_crop(
@@ -376,6 +409,10 @@ def run_yolo_tracker(
             stale_ids = [tid for tid in list(forehead_memory.keys()) if tid not in active_ids]
             for tid in stale_ids:
                 del forehead_memory[tid]
+
+            stale_command_ids = [tid for tid in list(command_cooldowns.keys()) if tid not in active_ids]
+            for tid in stale_command_ids:
+                del command_cooldowns[tid]
 
             _draw_hud(frame, fps, n_targets, n_objects, mode)
             cv2.imshow("Reflex", frame)
