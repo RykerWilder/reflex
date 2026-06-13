@@ -4,10 +4,9 @@ import time
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from importlib.resources import files
 
 try:
-    from ultralytics import YOLO
+    from ultralytics import YOLO, settings
     _YOLO_AVAILABLE = True
 except ImportError:
     _YOLO_AVAILABLE = False
@@ -31,18 +30,12 @@ _ID_COLORS = [
 ]
 
 
-def _package_path(*parts):
-    return Path(files("Reflex").joinpath(*parts))
-
-
 def _default_model_paths():
-    detect_model = _package_path("models", "yolov8n.pt")
-    pose_model = _package_path("models", "yolov8n-pose.pt")
-    return str(detect_model), str(pose_model)
+    return "yolov8n.pt", "yolov8n-pose.pt"
 
 
 def _default_screenshot_dir():
-    return str(_package_path("screenshots"))
+    return str(Path.cwd() / "screenshots")
 
 
 def _get_color(track_id):
@@ -268,6 +261,18 @@ def _launch_command_for_human(track_id, conf_score, cooldowns, threshold=0.80, c
         print(f"[COMMAND ERROR] {e}")
 
 
+def _load_yolo_model(model_name_or_path, label):
+    try:
+        print(f"[YOLO] Loading {label}: {model_name_or_path}")
+        model = YOLO(model_name_or_path)
+        print(f"[YOLO] {label} ready")
+        return model
+    except Exception as e:
+        print(f"[ERROR] Failed to load {label}: {model_name_or_path}")
+        print(f"[ERROR] {e}")
+        raise
+
+
 def run_yolo_tracker(
     camera_index=0,
     mode="default",
@@ -282,20 +287,18 @@ def run_yolo_tracker(
 
     detect_model_path = detect_model_path or _default_model_paths()[0]
     pose_model_path = pose_model_path or _default_model_paths()[1]
+    screenshot_dir = screenshot_dir or _default_screenshot_dir()
 
-    if not Path(detect_model_path).exists():
-        print(f"[ERROR] Detection model not found: {detect_model_path}")
+    print(f"[YOLO] weights_dir: {settings['weights_dir']}")
+    print(f"[YOLO] detect model: {detect_model_path}")
+    print(f"[YOLO] pose model  : {pose_model_path}")
+
+    try:
+        det_model = _load_yolo_model(detect_model_path, "detection model")
+        pose_model = _load_yolo_model(pose_model_path, "pose model")
+    except Exception:
+        print("[ERROR] Model loading failed. Check internet connection, model name, or Ultralytics installation.")
         return
-
-    if not Path(pose_model_path).exists():
-        print(f"[ERROR] Pose model not found: {pose_model_path}")
-        return
-
-    print(f"\n[YOLOv8-Detect] Loading model '{detect_model_path}'...")
-    det_model = YOLO(detect_model_path)
-    print(f"[YOLOv8-Pose] Loading model '{pose_model_path}'...")
-    pose_model = YOLO(pose_model_path)
-    print("[YOLO] Models ready")
 
     cap = cv2.VideoCapture(camera_index)
     if not cap.isOpened():
