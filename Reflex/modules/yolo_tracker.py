@@ -5,6 +5,7 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
+
 try:
     from ultralytics import YOLO, settings
     _YOLO_AVAILABLE = True
@@ -30,12 +31,21 @@ _ID_COLORS = [
 ]
 
 
+def _models_dir():
+    return Path.cwd() / "models"
+
+
 def _default_model_paths():
-    return "yolov8n.pt", "yolov8n-pose.pt"
+    models_dir = _models_dir()
+    return str(models_dir / "yolov8n.pt"), str(models_dir / "yolov8n-pose.pt")
 
 
 def _default_screenshot_dir():
     return str(Path.cwd() / "screenshots")
+
+
+def _ensure_model_dir(model_path):
+    Path(model_path).parent.mkdir(parents=True, exist_ok=True)
 
 
 def _get_color(track_id):
@@ -263,6 +273,7 @@ def _launch_command_for_human(track_id, conf_score, cooldowns, threshold=0.80, c
 
 def _load_yolo_model(model_name_or_path, label):
     try:
+        _ensure_model_dir(model_name_or_path)
         print(f"[YOLO] Loading {label}: {model_name_or_path}")
         model = YOLO(model_name_or_path)
         print(f"[YOLO] {label} ready")
@@ -289,15 +300,15 @@ def run_yolo_tracker(
     pose_model_path = pose_model_path or _default_model_paths()[1]
     screenshot_dir = screenshot_dir or _default_screenshot_dir()
 
-    print(f"[YOLO] weights_dir: {settings['weights_dir']}")
-    print(f"[YOLO] detect model: {detect_model_path}")
-    print(f"[YOLO] pose model  : {pose_model_path}")
+    print(f"[YOLO] ultralytics weights_dir setting: {settings['weights_dir']}")
+    print(f"[YOLO] local detect model path: {detect_model_path}")
+    print(f"[YOLO] local pose model path  : {pose_model_path}")
 
     try:
         det_model = _load_yolo_model(detect_model_path, "detection model")
         pose_model = _load_yolo_model(pose_model_path, "pose model")
     except Exception:
-        print("[ERROR] Model loading failed. Check internet connection, model name, or Ultralytics installation.")
+        print("[ERROR] Model loading failed. Check internet connection, model path, or Ultralytics installation.")
         return
 
     cap = cv2.VideoCapture(camera_index)
