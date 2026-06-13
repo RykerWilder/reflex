@@ -21,6 +21,23 @@ The application tracks the target as the person moves and displays visual overla
 - macOS, Linux, or Windows with OpenCV support.
 - Internet connection only the first time if extra dependencies need to be resolved.
 
+## Installation
+
+1. Clone repository
+```bash
+git clone https://github.com/RykerWilder/reflex
+```
+
+2. Change directory
+```bash
+cd reflex
+```
+
+3. Start setup.sh
+```bash
+bash setup.sh
+```
+
 ## Usage
 
 Show CLI help:
@@ -46,14 +63,12 @@ When the program starts, you will be asked for the webcam index:
 ```text
 Webcam index [default=0]:
 ```
-
 Press Enter to use the default webcam.
 
-## Controls
+## Controls for automatic
 
 - `S` saves a screenshot.
-- `Q` closes the application.
-- `ESC` closes the application.
+- `Q` or `ESC` closes the application.
 
 ## Notes
 
