@@ -1,4 +1,6 @@
-from Reflex.modules.yolo_tracker import run_yolo_tracker
+from Reflex.modules.automatic_tracker import run_yolo_tracker
+from Reflex.modules.manual_tracker import run_manual_forehead_tracker
+
 
 YELLOW = "\033[93m"
 RESET = "\033[0m"
@@ -9,14 +11,12 @@ def _ask_camera():
     return int(raw) if raw.isdigit() else 0
 
 
-def run(mode="default"):
+def run(mode):
     cam = _ask_camera()
-    run_yolo_tracker(camera_index=cam, mode=mode)
 
-
-def main():
-    run(mode="default")
-
-
-if __name__ == "__main__":
-    main()
+    if mode == "automatic":
+        run_yolo_tracker(camera_index=cam, mode="default")
+    elif mode == "manual":
+        run_manual_forehead_tracker(camera_index=cam)
+    else:
+        raise ValueError("Mode must be 'automatic' or 'manual'.")
