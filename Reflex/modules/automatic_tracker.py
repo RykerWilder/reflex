@@ -191,9 +191,9 @@ def _save_screenshot(frame, prefix="screenshot", save_dir=None):
 
     ok = cv2.imwrite(str(full_path), frame)
     if ok:
-        print(f"[SCREENSHOT] Saved: {full_path}")
+        print(f"[REFLEX] Sreenshot saved: {full_path}")
     else:
-        print(f"[SCREENSHOT] Error while saving screenshot to: {full_path}")
+        print(f"[REFLEX] Error while saving screenshot to: {full_path}")
 
 
 def _run_pose_on_person_crop(pose_model, frame, person_box, pose_conf=0.35):
@@ -327,9 +327,9 @@ def run_yolo_tracker(
     next_person_id = 0
     command_cooldowns = {}
 
-    print(f"\n[YOLO] Tracking started in mode: {mode}")
-    print("[YOLO] Press 'S' to save a screenshot.")
-    print("[YOLO] Press 'Q' or ESC to quit.")
+    print(f"\n[REFLEX] Tracking started in automatic mode.")
+    print("[REFLEX] Press 'S' to save a screenshot.")
+    print("[REFLEX] Press 'Q' or ESC to quit.")
 
     try:
         while True:
@@ -441,4 +441,4 @@ def run_yolo_tracker(
     finally:
         cap.release()
         cv2.destroyAllWindows()
-        print("[YOLO] Session stopped.")
+        print("[REFLEX] Session stopped.")

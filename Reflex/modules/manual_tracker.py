@@ -32,7 +32,7 @@ def _save_screenshot(frame, prefix="manual_forehead_tracker", save_dir=None):
     path = Path(save_dir) / f"{prefix}_{timestamp}.png"
     ok = cv2.imwrite(str(path), frame)
     if ok:
-        print(f"[SCREENSHOT] Saved: {path}")
+        print(f"[REFLEX] Screenshot saved: {path}")
 
 
 def _create_tracker():
@@ -41,7 +41,7 @@ def _create_tracker():
     if hasattr(cv2, "TrackerCSRT_create"):
         return cv2.TrackerCSRT_create()
     raise AttributeError(
-        "CSRT tracker non disponibile. Installa opencv-contrib-python."
+        "CSRT tracker not found"
     )
 
 
@@ -108,10 +108,10 @@ def run_manual_forehead_tracker(camera_index=0, screenshot_dir=None):
 
     window_name = "Reflex Manual Forehead Tracker"
 
-    print("[INFO] Press T to select target with ROI.")
-    print("[INFO] Press R to reset tracker.")
-    print("[INFO] Press S to save screenshot.")
-    print("[INFO] Press Q or ESC to quit.")
+    print("[REFLEX] Press T to select target with ROI.")
+    print("[REFLEX] Press R to reset tracker.")
+    print("[REFLEX] Press S to save screenshot.")
+    print("[REFLEX] Press Q or ESC to quit.")
 
     try:
         while True:
@@ -152,7 +152,7 @@ def run_manual_forehead_tracker(camera_index=0, screenshot_dir=None):
                 _overlay_text(frame, "STATUS: IDLE", (10, 25), (180, 180, 180), 0.55, 1)
 
             _overlay_text(frame, f"FPS: {fps:.1f}", (10, 75), COLOR_TEXT, 0.55, 1)
-            _overlay_text(frame, "[T] Select ROI  [R] Reset  [S] Screenshot  [Q] Quit", (10, frame.shape[0] - 12), COLOR_TEXT, 0.45, 1)
+            _overlay_text(frame, "[T] Select Target  [R] Reset  [S] Screenshot  [Q] Quit", (10, frame.shape[0] - 12), COLOR_TEXT, 0.45, 1)
 
             cv2.imshow(window_name, frame)
             key = cv2.waitKey(1) & 0xFF
@@ -167,20 +167,20 @@ def run_manual_forehead_tracker(camera_index=0, screenshot_dir=None):
                         bbox = roi
                         tracking = True
                         forehead_memory = None
-                        print(f"[TRACKER] Target selected: {roi}")
+                        print(f"[REFLEX] Target selected: {roi}")
                     else:
                         tracker = None
                         tracking = False
                         bbox = None
                         forehead_memory = None
-                        print("[TRACKER] Init failed.")
+                        print("[REFLEX] Init failed.")
 
             elif key == ord("r"):
                 tracker = None
                 tracking = False
                 bbox = None
                 forehead_memory = None
-                print("[TRACKER] Reset.")
+                print("[REFLEX] Reset target.")
 
             elif key == ord("s"):
                 _save_screenshot(frame, save_dir=screenshot_dir)
@@ -191,7 +191,7 @@ def run_manual_forehead_tracker(camera_index=0, screenshot_dir=None):
     finally:
         cap.release()
         cv2.destroyAllWindows()
-        print("[TRACKER] Session stopped.")
+        print("[REFLEX] Session stopped.")
 
 
 if __name__ == "__main__":
