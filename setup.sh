@@ -13,22 +13,21 @@ else
   exit 1
 fi
 
-echo -e "${YELLOW}[INFO] Creating virtual environment${NC}"
+echo -e "${YELLOW}[INFO]${NC} Creating virtual environment"
 "$PYTHON_BIN" -m venv .venv
 
-echo -e "${YELLOW}[INFO] Activating virtual environment${NC}"
+echo -e "${YELLOW}[INFO]${NC} Activating virtual environment"
 source .venv/bin/activate
 
-echo -e "${YELLOW}[INFO] Upgrading pip${NC}"
+echo -e "${YELLOW}[INFO]${NC} Upgrading pip"
 python -m pip install --upgrade pip
 
-echo -e "${YELLOW}[INFO] Installing dependencies${NC}"
+echo -e "${YELLOW}[INFO]${NC} Installing dependencies"
 pip install -r requirements.txt
 pip install -e .
 
-echo -e "${GREEN}[SUCCESS] REFLEX READY${NC}"
+echo -e "${GREEN}[SUCCESS]${NC} REFLEX READY"
 
-echo -e "${YELLOW}[INFO] To start reflex run:
+echo -e "${YELLOW}[INFO]${NC} To start reflex run:
 - source .venv/bin/activate
-- reflex --help
-${NC}"
+- reflex --help"
