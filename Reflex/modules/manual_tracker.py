@@ -3,6 +3,7 @@ import math
 import time
 from pathlib import Path
 from datetime import datetime
+from .night_vision_mode import NightVisionMode
 
 try:
     from ultralytics import YOLO, settings
@@ -233,7 +234,6 @@ def _load_yolo_model(model_name_or_path, label):
 
 
 class MouseSelector:
-    """Handle mouse selection of ROI"""
     def __init__(self):
         self.start_point = None
         self.end_point = None
@@ -258,14 +258,12 @@ class MouseSelector:
                 self.end_point = (x, y)
                 self.selecting = False
                 self.selection_complete = True
-                
-                # Create ROI from selection
+
                 x1 = min(self.start_point[0], self.end_point[0])
                 y1 = min(self.start_point[1], self.end_point[1])
                 x2 = max(self.start_point[0], self.end_point[0])
                 y2 = max(self.start_point[1], self.end_point[1])
-                
-                # Ensure minimum size
+
                 if x2 - x1 > 10 and y2 - y1 > 10:
                     self.roi = (x1, y1, x2 - x1, y2 - y1)
                     print(f"[REFLEX] Selection made: {self.roi}")
@@ -285,17 +283,14 @@ class MouseSelector:
             y1 = min(self.start_point[1], self.end_point[1])
             x2 = max(self.start_point[0], self.end_point[0])
             y2 = max(self.start_point[1], self.end_point[1])
-            
-            # Draw selection rectangle
+
             cv2.rectangle(frame, (x1, y1), (x2, y2), COLOR_SELECTION, 2)
-            
-            # Draw crosshair at center
+
             cx = (x1 + x2) // 2
             cy = (y1 + y2) // 2
             cv2.line(frame, (cx - 10, cy), (cx + 10, cy), COLOR_SELECTION, 1)
             cv2.line(frame, (cx, cy - 10), (cx, cy + 10), COLOR_SELECTION, 1)
-            
-            # Show size
+
             w = x2 - x1
             h = y2 - y1
             size_text = f"{w}x{h}"
@@ -314,7 +309,6 @@ class ManualAITracker:
     def initialize_ai_models(self, detect_model_path=None, pose_model_path=None):
         if not _YOLO_AVAILABLE:
             print("[ERROR] ultralytics not installed")
-            print("Run: pip install ultralytics")
             return False
 
         detect_model_path = detect_model_path or _default_model_paths()[0]
@@ -336,7 +330,6 @@ class ManualAITracker:
         x, y, w, h = bbox
         x1, y1, x2, y2 = int(x), int(y), int(x + w), int(y + h)
 
-        # Use pose estimation on the person crop
         pose_box, person_kpts_xy, person_kpts_conf = _run_pose_on_person_crop(
             self.pose_model,
             frame,
@@ -367,13 +360,11 @@ class ManualAITracker:
         if ok:
             self.bbox = new_box
 
-            # Try AI-based forehead estimation first
             fx, fy = None, None
             ai_result = self.get_forehead_from_ai(frame, new_box)
             if ai_result is not None:
                 fx, fy = ai_result
 
-            # Fallback to bbox-based estimation
             if fx is None or fy is None:
                 fx, fy = self.get_forehead_from_bbox(new_box)
 
@@ -429,14 +420,14 @@ def run_manual_forehead_tracker(
     
     screenshot_dir = screenshot_dir or _default_screenshot_dir()
 
-    # Initialize tracker with AI
     tracker = ManualAITracker()
     if not tracker.initialize_ai_models(detect_model_path, pose_model_path):
         print("[ERROR] Failed to initialize AI models. Exiting.")
         return
 
-    # Initialize mouse selector
     mouse_selector = MouseSelector()
+
+    night_vision = NightVisionMode()
 
     cap = cv2.VideoCapture(camera_index)
     if not cap.isOpened():
@@ -455,10 +446,10 @@ def run_manual_forehead_tracker(
     cv2.setMouseCallback(window_name, mouse_selector.mouse_callback)
 
     print("[REFLEX] Click and drag on the person to select target.")
+    print("[REFLEX] Press N to toggle Night Vision.")
     print("[REFLEX] Press R to reset tracker.")
     print("[REFLEX] Press S to save screenshot.")
     print("[REFLEX] Press Q or ESC to quit.")
-    print("[REFLEX] AI is always enabled for forehead estimation.")
 
     try:
         while True:
@@ -467,19 +458,19 @@ def run_manual_forehead_tracker(
                 print("[WARNING] Frame not received from webcam.")
                 break
 
+            if night_vision.is_enabled():
+                frame = night_vision.apply_effect(frame)
+
             curr_tick = cv2.getTickCount()
             fps = tick_freq / (curr_tick - prev_tick + 1e-9)
             prev_tick = curr_tick
 
-            # Check for new selection
             roi = mouse_selector.get_selection()
             if roi is not None:
                 tracker.start_tracking(frame, roi)
 
-            # Draw selection in progress
             mouse_selector.draw_selection(frame)
 
-            # Update tracker
             ok, forehead_pos = tracker.update(frame)
 
             if ok and forehead_pos is not None:
@@ -488,22 +479,24 @@ def run_manual_forehead_tracker(
                 _draw_forehead_reticle(frame, fx, fy)
                 _overlay_text(frame, "STATUS: TRACKING", (10, 25), COLOR_TRACKING, 0.55, 1)
                 _overlay_text(frame, f"FOREHEAD: ({fx}, {fy})", (10, 50), COLOR_FOREHEAD, 0.55, 1)
-                _overlay_text(frame, "AI: ENABLED", (10, 100), (0, 255, 255), 0.45, 1)
             else:
                 if tracker.tracking:
                     _overlay_text(frame, "STATUS: LOST", (10, 25), (0, 0, 255), 0.55, 1)
                 else:
                     _overlay_text(frame, "STATUS: IDLE - Click & Drag to select", (10, 25), (180, 180, 180), 0.55, 1)
 
-            # HUD
             _overlay_text(frame, f"FPS: {fps:.1f}", (10, 75), COLOR_TEXT, 0.55, 1)
-            _overlay_text(frame, "  [R] Reset  [S] Screenshot  [Q] Quit", 
+            _overlay_text(frame, night_vision.get_status_text(), (10, 125), (0, 255, 0) if night_vision.is_enabled() else (180, 180, 180), 0.45, 1)
+            _overlay_text(frame, "  [N] Night Vision  [R] Reset  [S] Screenshot  [Q] Quit", 
                          (10, frame.shape[0] - 12), COLOR_TEXT, 0.45, 1)
 
             cv2.imshow(window_name, frame)
             key = cv2.waitKey(1) & 0xFF
 
-            if key == ord("r"):
+            if key == ord("n"):
+                night_vision.toggle()
+
+            elif key == ord("r"):
                 tracker.reset()
 
             elif key == ord("s"):

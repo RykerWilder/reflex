@@ -4,7 +4,7 @@ import time
 import subprocess
 from datetime import datetime
 from pathlib import Path
-
+from .night_vision_mode import NightVisionMode
 
 try:
     from ultralytics import YOLO, settings
@@ -95,10 +95,10 @@ def _draw_object_box(frame, x1, y1, x2, y2, label, conf, color=(180, 180, 180)):
     cv2.putText(frame, tag, (x1 + 2, ty), FONT, 0.52, color, 1, cv2.LINE_AA)
 
 
-def _draw_hud(frame, fps, n_targets, n_objects, mode):
+def _draw_hud(frame, fps, n_targets, n_objects, mode, night_vision):
     h_frame, _ = frame.shape[:2]
     overlay = frame.copy()
-    cv2.rectangle(overlay, (0, 0), (420, 122), (20, 20, 20), -1)
+    cv2.rectangle(overlay, (0, 0), (420, 145), (20, 20, 20), -1)
     cv2.addWeighted(overlay, 0.55, frame, 0.45, 0, frame)
 
     grey = (200, 200, 200)
@@ -106,7 +106,11 @@ def _draw_hud(frame, fps, n_targets, n_objects, mode):
     _overlay_text(frame, f"OBJECTS : {n_objects}", (8, 44), (255, 180, 0))
     _overlay_text(frame, f"PERSONS : {n_targets}", (8, 66), (0, 255, 80) if n_targets else grey)
     _overlay_text(frame, f"FPS     : {fps:.1f}", (8, 88), grey, 0.5, 1)
-    _overlay_text(frame, "[S] Screenshot   [Q] Quit", (8, h_frame - 10), grey, 0.42, 1)
+
+    nv_color = (0, 255, 0) if night_vision.is_enabled() else grey
+    _overlay_text(frame, night_vision.get_status_text(), (8, 110), nv_color, 0.5, 1)
+    
+    _overlay_text(frame, "[N] Night Vision  [S] Screenshot   [Q] Quit", (8, h_frame - 10), grey, 0.42, 1)
 
 
 def _valid_point(pt, conf=None, min_conf=0.35):
@@ -293,7 +297,6 @@ def run_yolo_tracker(
 ):
     if not _YOLO_AVAILABLE:
         print("[ERROR] ultralytics not installed")
-        print("Run: pip install ultralytics")
         return
 
     detect_model_path = detect_model_path or _default_model_paths()[0]
@@ -310,6 +313,8 @@ def run_yolo_tracker(
     except Exception:
         print("[ERROR] Model loading failed. Check internet connection, model path, or Ultralytics installation.")
         return
+
+    night_vision = NightVisionMode()
 
     cap = cv2.VideoCapture(camera_index)
     if not cap.isOpened():
@@ -328,6 +333,7 @@ def run_yolo_tracker(
     command_cooldowns = {}
 
     print(f"\n[REFLEX] Tracking started in automatic mode.")
+    print("[REFLEX] Press 'N' to toggle Night Vision.")
     print("[REFLEX] Press 'S' to save a screenshot.")
     print("[REFLEX] Press 'Q' or ESC to quit.")
 
@@ -337,6 +343,10 @@ def run_yolo_tracker(
             if not ret:
                 print("[WARNING] Frame not received from webcam.")
                 break
+
+            # Apply Night Vision if enabled
+            if night_vision.is_enabled():
+                frame = night_vision.apply_effect(frame)
 
             curr_tick = cv2.getTickCount()
             fps = tick_freq / (curr_tick - prev_tick + 1e-9)
@@ -428,14 +438,18 @@ def run_yolo_tracker(
             for tid in stale_command_ids:
                 del command_cooldowns[tid]
 
-            _draw_hud(frame, fps, n_targets, n_objects, mode)
+            _draw_hud(frame, fps, n_targets, n_objects, mode, night_vision)
             cv2.imshow("Reflex", frame)
 
             key = cv2.waitKey(1) & 0xFF
-            if key == ord("s"):
+            
+            if key == ord("n"):
+                night_vision.toggle()
+                
+            elif key == ord("s"):
                 _save_screenshot(frame, prefix=f"reflex_{mode}", save_dir=screenshot_dir)
 
-            if key in (ord("q"), 27):
+            elif key in (ord("q"), 27):
                 break
 
     finally:

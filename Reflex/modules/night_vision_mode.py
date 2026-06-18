@@ -9,8 +9,8 @@ class NightVisionMode:
         
     def toggle(self):
         self.enabled = not self.enabled
-        status = "attivata" if self.enabled else "disattivata"
-        print(f"[NIGHT VISION] Modalità visione notturna {status}")
+        status = "activated" if self.enabled else "deactivated"
+        print(f"[REFLEX] Night vision mode {status}")
         return self.enabled
     
     def apply_effect(self, frame):
@@ -22,9 +22,8 @@ class NightVisionMode:
         enhanced = cv2.equalizeHist(gray)
 
         night_vision = np.zeros_like(frame)
-        night_vision[:, :, 1] = enhanced  # Canale verde
-        
-        # Aggiungi un leggero effetto di rumore (opzionale)
+        night_vision[:, :, 1] = enhanced
+
         noise = np.random.randint(0, 20, night_vision.shape[:2], dtype=np.uint8)
         night_vision[:, :, 1] = cv2.add(night_vision[:, :, 1], noise)
 
@@ -36,11 +35,6 @@ class NightVisionMode:
         mask = mask[:, :, np.newaxis]
         
         night_vision = (night_vision * mask).astype(np.uint8)
-
-        cv2.putText(night_vision, "NIGHT VISION", (10, 30), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-        cv2.putText(night_vision, "[N] Disattiva", (10, 60), 
-                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
         
         self.night_vision_frame = night_vision
         return night_vision
