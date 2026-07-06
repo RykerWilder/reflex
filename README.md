@@ -1,6 +1,6 @@
 # Reflex
 
-<img src="https://i.pinimg.com/1200x/fc/73/3a/fc733ad1ecaa8cf200e34c5110aaceb7.jpg" alt="Red Dot Sight">
+<img src="https://github.com/RykerWilder/static_files/blob/main/reflex.webp" alt="Reflex">
 
 Reflex is a Python computer vision tool that uses a webcam to detect people and place a red crosshair on the subject’s forehead in real time.
 
