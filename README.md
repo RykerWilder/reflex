@@ -1,4 +1,7 @@
 # Reflex
+![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white)
+![Shell Script](https://img.shields.io/badge/Shell_Script-121011?style=flat&logo=gnu-bash&logoColor=white)
+![YOLOv8](https://img.shields.io/badge/YOLOv8-00FFFF?style=flat&logo=ultralytics&logoColor=black)
 
 <img src="https://github.com/RykerWilder/static_files/blob/main/reflex.webp" alt="Reflex">
 
